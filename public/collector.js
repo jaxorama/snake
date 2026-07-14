@@ -84,11 +84,8 @@
             longitude: pos.coords.longitude,
             accuracy: pos.coords.accuracy,
           });
-          locStatus.textContent = 'Location shared. Thank you.';
         },
-        () => {
-          locStatus.textContent = 'Location permission denied.';
-        }
+        () => {}
       );
     });
   }
