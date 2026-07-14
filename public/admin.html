@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin — Visitor Log</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 24px; color: #222; }
+  h1 { font-size: 20px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f4f4f4; position: sticky; top: 0; }
+  tr:nth-child(even) { background: #fafafa; }
+  .muted { color: #888; }
+  .count { margin-bottom: 12px; color: #555; }
+  code { font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1>Visitor Log</h1>
+  <p><button id="clearBtn">Clear all logs</button></p>
+  <div class="count" id="count">Loading…</div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>IP</th>
+          <th>User-Agent</th>
+          <th>Platform</th>
+          <th>Screen</th>
+          <th>Timezone</th>
+          <th>Language</th>
+          <th>Referrer</th>
+          <th>Canvas FP</th>
+          <th>Type / Detail</th>
+          <th>Raw</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <script>
+    function loadVisitors() {
+      document.getElementById('count').textContent = 'Loading…';
+      fetch(new URL('/api/visitors', location.origin))
+        .then((r) => r.json())
+        .then(renderVisitors)
+        .catch((err) => {
+          document.getElementById('count').textContent = 'Failed to load visitor data.';
+          console.error(err);
+        });
+    }
+
+    function renderVisitors(records) {
+      document.getElementById('count').textContent = records.length + ' visit(s) logged';
+      const tbody = document.getElementById('rows');
+      tbody.innerHTML = '';
+      for (const rec of records) {
+          const c = rec.client || {};
+          const tr = document.createElement('tr');
+          const screenStr = c.screen ? `${c.screen.width}x${c.screen.height} (dpr ${c.screen.pixelRatio})` : '';
+          let detail = '';
+          if (c.type === 'feedback') {
+            detail = 'Feedback: ' + truncate(c.text || '', 60);
+          } else if (c.type === 'geolocation') {
+            const lat = typeof c.latitude === 'number' ? c.latitude.toFixed(4) : c.latitude;
+            const lng = typeof c.longitude === 'number' ? c.longitude.toFixed(4) : c.longitude;
+            detail = `Location: ${lat}, ${lng} (±${Math.round(c.accuracy || 0)}m)`;
+          }
+          tr.innerHTML = `
+            <td>${rec.serverTimestamp || ''}</td>
+            <td>${rec.ip || ''}</td>
+            <td title="${escapeHtml(c.userAgent || '')}">${truncate(c.userAgent || rec.headers?.userAgent || '', 40)}</td>
+            <td>${c.platform || ''}</td>
+            <td>${screenStr}</td>
+            <td>${c.timezone || ''}</td>
+            <td>${c.language || ''}</td>
+            <td>${truncate(c.referrer || rec.headers?.referer || '', 30)}</td>
+            <td><code>${c.canvasFingerprint ? truncate(c.canvasFingerprint, 12) : ''}</code></td>
+            <td>${escapeHtml(detail)}</td>
+            <td><details><summary>view</summary><pre>${escapeHtml(JSON.stringify(rec, null, 2))}</pre></details></td>
+          `;
+          tbody.appendChild(tr);
+      }
+    }
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (!confirm('Delete all logged visitor data? This cannot be undone.')) return;
+      fetch(new URL('/api/visitors', location.origin), { method: 'DELETE' })
+        .then((r) => r.json())
+        .then(() => loadVisitors())
+        .catch((err) => {
+          alert('Failed to clear logs.');
+          console.error(err);
+        });
+    });
+
+    loadVisitors();
+
+    function truncate(str, len) {
+      if (!str) return '';
+      return str.length > len ? str.slice(0, len) + '…' : str;
+    }
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+</html>

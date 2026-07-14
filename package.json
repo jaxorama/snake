@@ -1,0 +1,13 @@
+{
+  "name": "visitor-tracking",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Research project: captures and logs visitor/browser fingerprint data.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
