@@ -5,4 +5,4 @@ compatibility_date = "2026-07-14"
 [[d1_databases]]
 binding = "DB"
 database_name = "snake-visitors"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "34772727-f054-49be-b95b-9b9f2dcceb0f"
